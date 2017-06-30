@@ -23,8 +23,9 @@ class Client(object):
         self.api_key = api_key
         self.data_source_id = data_source_id
 
-    def _api_get(self, resource):
+    def _api_get(self, resource, params={}):
         return requests.get(self.api_base + '/' + resource,
+                params=params,
                 headers={'Authorization': 'Key %s' % self.api_key})
 
     def _api_post(self, resource, data):
@@ -33,7 +34,19 @@ class Client(object):
                             data=json.dumps(data))
 
     def data_sources(self):
-        return self._api_get('data_sources')
+        return self._api_get('data_sources').json()
+
+    def all_queries(self):
+        queries = []
+        page = 1
+        res = self._api_get('queries', {'page': page})
+
+        while res.status_code == 200:
+            queries += res.json()['results']
+            page += 1
+            res = self._api_get('queries', {'page': page})
+
+        return queries
 
     def query(self, query, retry_num=30, interval_sec=1):
         res_j = self._post_query(query).json()
